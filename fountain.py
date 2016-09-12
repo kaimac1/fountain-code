@@ -1,8 +1,9 @@
 import random
 import math
+import time
 
-k  = 1000
-kp = 1300
+k  = 10000
+kp = 12000
 c = 0.1
 delta = 0.1
 
@@ -17,12 +18,18 @@ for i in range(k):
 def uniform(lo, hi):
     return lo + int(random.random() * (hi + 1 - lo))
 
-# Sample from the distribution `dist` between `lo` and `hi`
-def sample(lo, hi, dist):
-    while True:
-        x = uniform(lo, hi)
-        g = random.random()
-        if g < dist(x): return x
+def cdf(lo, hi, dist):
+    cdf = []
+    p = 0.0
+    for x in range(lo, hi + 1):
+        p += dist(x)
+        cdf.append((x,p))
+    return cdf
+
+def sample_from_cdf(cdf):
+    point = random.random() * cdf[-1][1]
+    for (x,p) in cdf:
+        if point <= p: return x
 
 # Return the sum of `dist` between `lo` and `hi`
 def sumover(lo, hi, dist):
@@ -50,8 +57,10 @@ z = sumover(1, k, ideal_soliton) + sumover(1, k, tau)
 def robust_soliton(d):
     return (ideal_soliton(d) + tau(d)) / z
 
+rb = cdf(1, k, robust_soliton)
+
 def generate_block():
-    deg = sample(1, k, robust_soliton)
+    deg = sample_from_cdf(rb)
     input_blocks = []
     for i in range(deg):
         while True:
@@ -67,9 +76,13 @@ def generate_block():
 
 nodes = []
 
-print 'Generating...'
+print 'Generating...',
+start = time.time()
 for i in range(kp):
     nodes.append(generate_block())
+print 'took {:.2f} s'.format(time.time()-start)
+
+
 
 def decode(nodes):
     print 'Decoding: ',
@@ -103,7 +116,7 @@ def decode(nodes):
             print "Couldn't find a node with only one connected block!"
             return None
             
-    print s
+    #print s
 
 
 decode(nodes)
